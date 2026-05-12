@@ -1,10 +1,24 @@
 import os
 import requests
+import random
 from datetime import datetime, timedelta
 
 CWA_API_KEY   = os.environ["CWA_API_KEY"]
 LINE_TOKEN    = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
 LINE_GROUP_ID = os.environ["LINE_GROUP_ID"]
+
+QUOTES = [
+    "每一步都算數，即使今天只是出門走走。",
+    "不是每天都要破紀錄，但每天都要出現。",
+    "跑步不是逃避生活，而是回到自己。",
+    "慢一點沒關係，停下來才是放棄。",
+    "你的雙腳比你想像的更有力量。",
+    "今天的汗水，是明天的自信。",
+    "不管幾公里，動起來就是贏了。",
+    "身體記得每一次你沒有放棄的時刻。",
+    "跑過的路，都會成為你的一部分。",
+    "天氣不完美，但你可以是。",
+]
 
 def get_taipei_tomorrow():
     url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001"
@@ -29,29 +43,30 @@ def get_taipei_tomorrow():
     }
 
 def running_suggestion(pop, max_t, min_t):
-    issues = []
-    if pop > 40: issues.append(f"降雨機率 {pop}%")
-    if max_t > 30: issues.append(f"最高氣溫 {max_t}°C")
-    if len(issues) >= 2:
-        return f"⚠️ 不建議戶外跑步：{'、'.join(issues)}，建議改為室內訓練。"
+    if pop > 40 and max_t > 30:
+        return "⚠️ 高溫又有雨，建議改為室內訓練！"
     elif pop > 40:
-        return f"🌧️ 留意降雨（{pop}%），建議攜帶雨具或選有頂棚跑道。"
+        return f"🌧️ 降雨機率 {pop}%，建議攜帶雨具或選有頂棚跑道。"
     elif max_t > 30:
-        return f"🌡️ 高溫注意（{max_t}°C），建議清晨或傍晚出發，多補水。"
+        return f"🌡️ 氣溫偏高（{max_t}°C），建議清晨或傍晚出發，多補水。"
     else:
-        return f"✅ 天氣適合跑步！（{min_t}–{max_t}°C，降雨機率 {pop}%）出發吧！"
+        return f"✅ 天氣不錯，適合戶外跑步，出發吧！"
 
 def build_message(w):
+    quote = random.choice(QUOTES)
     return (
         f"🗓️ 台北明日天氣｜{w['date']}\n"
-        f"{'─'*22}\n"
-        f"🌤️  天氣：{w['wx']}\n"
-        f"🌡️  氣溫：{w['min_t']}°C ～ {w['max_t']}°C\n"
-        f"☔  降雨機率：{w['pop']}%\n"
-        f"{'─'*22}\n"
-        f"🏃  跑步建議\n"
+        f"\n"
+        f"⛅ 天氣｜{w['wx']}\n"
+        f"🌡️ 氣溫｜{w['min_t']}°C ～ {w['max_t']}°C\n"
+        f"☔ 降雨｜{w['pop']}%\n"
+        f"\n"
+        f"🏃 跑步建議\n"
         f"{running_suggestion(w['pop'], w['max_t'], w['min_t'])}\n"
-        f"{'─'*22}\n"
+        f"\n"
+        f"💬 今日雞湯\n"
+        f"{quote}\n"
+        f"\n"
         f"📡 資料來源：中央氣象署"
     )
 
