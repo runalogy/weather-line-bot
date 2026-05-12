@@ -1,0 +1,22 @@
+name: 每日台北天氣推播
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: 執行天氣推播
+        env:
+          CWA_API_KEY:               ${{ secrets.CWA_API_KEY }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_GROUP_ID:             ${{ secrets.LINE_GROUP_ID }}
+        run: python weather_line_notify.py
