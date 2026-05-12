@@ -19,4 +19,7 @@ jobs:
           CWA_API_KEY:               ${{ secrets.CWA_API_KEY }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_GROUP_ID:             ${{ secrets.LINE_GROUP_ID }}
+          LINE_GROUP_ID_2:           ${{ secrets.LINE_GROUP_ID_2 }}
+          LINE_GROUP_ID_3:           ${{ secrets.LINE_GROUP_ID_3 }}
+          LINE_GROUP_ID_4:           ${{ secrets.LINE_GROUP_ID_4 }}
         run: python weather_line_notify.py
