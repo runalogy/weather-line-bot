@@ -5,7 +5,13 @@ from datetime import datetime, timedelta
 
 CWA_API_KEY   = os.environ["CWA_API_KEY"]
 LINE_TOKEN    = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
-LINE_GROUP_ID = os.environ["LINE_GROUP_ID"]
+
+GROUP_IDS = [
+    os.environ.get("LINE_GROUP_ID", ""),
+    os.environ.get("LINE_GROUP_ID_2", ""),
+    os.environ.get("LINE_GROUP_ID_3", ""),
+    os.environ.get("LINE_GROUP_ID_4", ""),
+]
 
 QUOTES = [
     "跑步不是為了數字，是為了那口呼吸。",
@@ -59,28 +65,4 @@ def build_message(w):
     return (
         f"🗓️ 台北明日天氣｜{w['date']}\n"
         f"\n"
-        f"⛅ 天氣｜{w['wx']}\n"
-        f"🌡️ 氣溫｜{w['min_t']}°C ～ {w['max_t']}°C\n"
-        f"☔ 降雨｜{w['pop']}%\n"
-        f"\n"
-        f"🏃 跑步建議\n"
-        f"{running_suggestion(w['pop'], w['max_t'], w['min_t'])}\n"
-        f"\n"
-        f"💬 今日心靈\n"
-        f"{quote}\n"
-        f"\n"
-        f"📡 Runalogy｜每日 17:00 為你播報"
-    )
-
-def send_line_message(text):
-    r = requests.post(
-        "https://api.line.me/v2/bot/message/push",
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {LINE_TOKEN}"},
-        json={"to": LINE_GROUP_ID, "messages": [{"type": "text", "text": text}]},
-        timeout=10
-    )
-    print("✅ 送出成功" if r.status_code == 200 else f"❌ 失敗：{r.status_code} {r.text}")
-
-if __name__ == "__main__":
-    w = get_taipei_tomorrow()
-    send_line_message(build_message(w))
+        f"⛅
