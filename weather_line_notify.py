@@ -3,8 +3,8 @@ import requests
 import random
 from datetime import datetime, timedelta
 
-CWA_API_KEY   = os.environ["CWA_API_KEY"]
-LINE_TOKEN    = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+CWA_API_KEY = os.environ["CWA_API_KEY"]
+LINE_TOKEN  = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
 
 GROUP_IDS = [
     os.environ.get("LINE_GROUP_ID", ""),
@@ -50,19 +50,49 @@ def get_taipei_tomorrow():
 
 def running_suggestion(pop, max_t, min_t):
     if pop > 40 and max_t > 30:
-        return "⚠️ 又熱又有雨，今天換跑步機也是一種選擇，身體比里程重要。"
+        return "又熱又有雨，今天換跑步機也是一種選擇，身體比里程重要。"
     elif pop > 40:
-        return f"🌧️ 降雨機率 {pop}%，帶把傘出門，或改跑室內跑步機都好。"
+        return "降雨機率 {}%，帶把傘出門，或改跑室內跑步機都好。".format(pop)
     elif max_t > 30:
-        return f"🌡️ 明天高溫 {max_t}°C，建議清晨六點前或傍晚六點後出門，慢一點沒關係，補水最重要。"
+        return "明天高溫 {}°C，建議清晨六點前或傍晚六點後出門，補水最重要。".format(max_t)
     elif min_t < 12:
-        return f"🧣 明天低溫 {min_t}°C，多穿一層，暖身操做足再出發，身體要顧好。"
+        return "明天低溫 {}°C，多穿一層，暖身操做足再出發。".format(min_t)
     else:
-        return "✅ 明天天氣不錯，適合出門跑步，不用設定目標，就享受那口呼吸吧。"
+        return "明天天氣不錯，適合出門跑步，不用設定目標，就享受那口呼吸吧。"
 
 def build_message(w):
     quote = random.choice(QUOTES)
-    return (
-        f"🗓️ 台北明日天氣｜{w['date']}\n"
-        f"\n"
-        f"⛅
+    suggestion = running_suggestion(w["pop"], w["max_t"], w["min_t"])
+    msg = "台北明日天氣 " + w["date"] + "\n"
+    msg += "\n"
+    msg += "天氣：" + w["wx"] + "\n"
+    msg += "氣溫：" + str(w["min_t"]) + "°C 到 " + str(w["max_t"]) + "°C\n"
+    msg += "降雨：" + str(w["pop"]) + "%\n"
+    msg += "\n"
+    msg += "跑步建議\n"
+    msg += suggestion + "\n"
+    msg += "\n"
+    msg += "今日心靈\n"
+    msg += quote + "\n"
+    msg += "\n"
+    msg += "Runalogy 每日為你播報"
+    return msg
+
+def send_line_message(text):
+    for gid in GROUP_IDS:
+        if not gid:
+            continue
+        r = requests.post(
+            "https://api.line.me/v2/bot/message/push",
+            headers={"Content-Type": "application/json", "Authorization": "Bearer " + LINE_TOKEN},
+            json={"to": gid, "messages": [{"type": "text", "text": text}]},
+            timeout=10
+        )
+        if r.status_code == 200:
+            print("送出成功：" + gid[:10])
+        else:
+            print("失敗：" + str(r.status_code))
+
+if __name__ == "__main__":
+    w = get_taipei_tomorrow()
+    send_line_message(build_message(w))
