@@ -1,8 +1,8 @@
 name: 每日台北天氣推播
 
 on:
-  schedule:
-    - cron: "0 9 * * *"
+  repository_dispatch:
+    types: [trigger-weather]
   workflow_dispatch:
 
 jobs:
