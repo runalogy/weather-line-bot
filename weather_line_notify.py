@@ -50,27 +50,48 @@ QUOTES = [
 ]
 
 def get_taipei_tomorrow():
-    url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001"
+    url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091"
     params = {
         "Authorization": CWA_API_KEY,
         "locationName" : "臺北市",
-        "elementName"  : "Wx,PoP,MinT,MaxT",
     }
     r = requests.get(url, params=params, timeout=10)
     r.raise_for_status()
     data = r.json()
-    location = data["records"]["location"][0]
-    elements = {e["elementName"]: e["time"] for e in location["weatherElement"]}
 
-    def val(name, idx): return elements[name][idx]["parameter"]["parameterName"]
+    location = data["records"]["Locations"][0]["Location"][0]
+    elements = {e["ElementName"]: e["Time"] for e in location["WeatherElement"]}
+
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    def find_period(elem_name, target_date, start_hour):
+        times = elements.get(elem_name, [])
+        for t in times:
+            start = t["StartTime"]
+            if target_date in start and "T{:02d}:00:00".format(start_hour) in start:
+                ev = t.get("ElementValue", [{}])
+                return list(ev[0].values())[0] if ev else "N/A"
+        return "N/A"
+
+    wx_day     = find_period("天氣現象", tomorrow, 6)
+    wx_night   = find_period("天氣現象", tomorrow, 18)
+    pop_day    = find_period("12小時降雨機率", tomorrow, 6)
+    pop_night  = find_period("12小時降雨機率", tomorrow, 18)
+    max_t      = find_period("最高溫度", tomorrow, 6)
+    min_t      = find_period("最低溫度", tomorrow, 6)
+
+    def safe_int(v, default=0):
+        try: return int(v)
+        except: return default
 
     return {
-        "date"        : (datetime.now() + timedelta(days=1)).strftime("%m/%d"),
-        "wx"          : val("Wx", 2),
-        "pop_day"     : int(val("PoP", 2)),   # 明天白天
-        "pop_night" : int(val("PoP", 3)) if len(elements["PoP"]) > 3 else int(val("PoP", 2)),
-        "min_t"       : int(val("MinT", 2)),
-        "max_t"       : int(val("MaxT", 2)),
+        "date"      : (datetime.now() + timedelta(days=1)).strftime("%m/%d"),
+        "wx_day"    : wx_day if wx_day != "N/A" else "資料未提供",
+        "wx_night"  : wx_night if wx_night != "N/A" else "資料未提供",
+        "pop_day"   : safe_int(pop_day),
+        "pop_night" : safe_int(pop_night),
+        "min_t"     : safe_int(min_t),
+        "max_t"     : safe_int(max_t),
     }
 
 def running_suggestion(pop_day, pop_night, max_t, min_t):
@@ -95,7 +116,8 @@ def build_message(w):
     suggestion = running_suggestion(w["pop_day"], w["pop_night"], w["max_t"], w["min_t"])
     msg = "🗓️ 台北明日天氣｜" + w["date"] + "\n"
     msg += "\n"
-    msg += "⛅ 天氣｜" + w["wx"] + "\n"
+    msg += "🌅 白天｜" + w["wx_day"] + "\n"
+    msg += "🌙 晚上｜" + w["wx_night"] + "\n"
     msg += "🌡️ 氣溫｜" + str(w["min_t"]) + "°C ～ " + str(w["max_t"]) + "°C\n"
     msg += "\n"
     msg += "☔ 降雨機率\n"
@@ -125,7 +147,7 @@ def send_line_message(text):
             print("送出成功：" + gid[:10])
         else:
             print("失敗：" + str(r.status_code))
-        time.sleep(1)
+        time.sleep(2)
 
 if __name__ == "__main__":
     w = get_taipei_tomorrow()
