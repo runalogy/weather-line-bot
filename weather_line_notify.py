@@ -23,7 +23,7 @@ QUOTES = [
     "我學到無論跑步與人生都沒有所謂失敗，只要你拒絕停下來。─ 安比·波爾富",
     "跑步時你跑第一、中間或最後都不重要。重要的是你可以說：我跑完全程了！─ 弗雷德·勒博",
     "跑步是為了找到內心的平靜，生命也是如此。─ 狄恩卡·那希斯",
-    "有時你必須想知道你正在做什麼。這些年來，我已經給了自己1000個理由繼續跑步，但始終還是會回到最初的地方。這最終歸於自我滿足和成就感。─ 史蒂夫普利方坦",
+    "有時你必須想知道你正在做什麼。這些年來，我已經給了自己1000個理由繼續跑步，但始終還是會回到最初的地方。─ 史蒂夫普利方坦",
     "跑步是件很簡單的事，只要你想，跑步也會提供給你深入了解它的機會。─ 比茲·斯通",
     "跑步如人生，只要不斷努力，就沒有所謂的失敗！─ 安比·波弗特",
     "當你感到疲憊時，想著為什麼當初開始。",
@@ -31,11 +31,11 @@ QUOTES = [
     "不要害怕失敗，害怕的應該是放棄。每一步，都是向堅強和勇氣致敬的證明。",
     "在汗水中，你會找到力量；在挑戰中，你會找到成長。跑步，是人生不斷超越的旅程。",
     "不要停下來，不要回頭看，只有前進的勇氣，才能到達更遠的地方。",
-    "跑步是一種掌控生命的感覺，我喜歡跑步帶給我的健康，也喜歡跑步是有一個明確的開始和結束的事實。─ 南希·格斯坦",
+    "跑步是一種掌控生命的感覺。我給自己設定目標，然後去實現目標。─ 南希·格斯坦",
     "每一步都是向自己的挑戰說不，每一次汗水都是在磨練自己的意志：相信自己，你可以做到。",
     "不論起點有多遠，只要你不停地往前走，終點就會在你腳下。",
     "在跑步的路上，只要不放棄，你就會發現自己的潛力是無限的。",
-    "跑步馬拉松是一種對抗自己的過程，每一次突破都是對內心強大的證明。堅持不懈，你會發現自己比想像中更堅強。",
+    "跑步馬拉松是一種對抗自己的過程，每一次突破都是對內心強大的證明。",
     "完成馬拉松靠的不是傲氣，而是謙虛。",
     "勝利當然很偉大，但你若真想在生活中做出成就，秘訣就是學會如何失敗。─ 威爾瑪·魯道夫",
     "跑步不是為了數字，是為了那口呼吸。",
@@ -49,66 +49,31 @@ QUOTES = [
 ]
 
 def get_taipei_tomorrow():
-    # F-D0047-061 逐三小時預報
-    url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061"
+    url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001"
     params = {
         "Authorization": CWA_API_KEY,
         "locationName" : "臺北市",
-        "elementName"  : "PoP6h,T,Wx",
+        "elementName"  : "Wx,PoP,MinT,MaxT",
     }
     r = requests.get(url, params=params, timeout=10)
     r.raise_for_status()
     data = r.json()
-
-    location = data["records"]["locations"][0]["location"][0]
+    location = data["records"]["location"][0]
     elements = {e["elementName"]: e["time"] for e in location["weatherElement"]}
 
-    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-
-    # 找明天的資料
-    def get_period(elem, start_hour):
-        for t in elements[elem]:
-            t_start = t["startTime"]
-            if tomorrow in t_start and "T{:02d}".format(start_hour) in t_start:
-                v = t.get("elementValue", [{}])
-                return v[0].get("value", "N/A")
-        return "N/A"
-
-    # 早上 06:00, 下午 12:00, 晚上 18:00
-    pop_morning   = get_period("PoP6h", 6)
-    pop_afternoon = get_period("PoP6h", 12)
-    pop_evening   = get_period("PoP6h", 18)
-
-    temp_morning   = get_period("T", 6)
-    temp_afternoon = get_period("T", 12)
-    temp_evening   = get_period("T", 18)
-
-    wx_morning = get_period("Wx", 6)
-
-    # 最高最低氣溫
-    temps = []
-    for v in [temp_morning, temp_afternoon, temp_evening]:
-        try:
-            temps.append(int(v))
-        except:
-            pass
+    def val(name, idx): return elements[name][idx]["parameter"]["parameterName"]
 
     return {
-        "date"          : (datetime.now() + timedelta(days=1)).strftime("%m/%d"),
-        "wx"            : wx_morning if wx_morning != "N/A" else "天氣資料未取得",
-        "min_t"         : min(temps) if temps else 0,
-        "max_t"         : max(temps) if temps else 0,
-        "pop_morning"   : pop_morning,
-        "pop_afternoon" : pop_afternoon,
-        "pop_evening"   : pop_evening,
+        "date"        : (datetime.now() + timedelta(days=1)).strftime("%m/%d"),
+        "wx"          : val("Wx", 2),
+        "pop_day"     : int(val("PoP", 2)),   # 明天白天
+        "pop_night"   : int(val("PoP", 3)),   # 明天晚上
+        "min_t"       : int(val("MinT", 2)),
+        "max_t"       : int(val("MaxT", 2)),
     }
 
-def running_suggestion(pop_m, pop_a, pop_e, max_t, min_t):
-    max_pop = max(
-        int(pop_m) if str(pop_m).isdigit() else 0,
-        int(pop_a) if str(pop_a).isdigit() else 0,
-        int(pop_e) if str(pop_e).isdigit() else 0,
-    )
+def running_suggestion(pop_day, pop_night, max_t, min_t):
+    max_pop = max(pop_day, pop_night)
     if max_pop > 60 and max_t > 30:
         return "又熱又有雨，今天換跑步機也是一種選擇，身體比里程重要。"
     elif max_pop > 60:
@@ -117,26 +82,24 @@ def running_suggestion(pop_m, pop_a, pop_e, max_t, min_t):
         return "明天高溫 {}°C，建議清晨六點前或傍晚六點後出門，補水最重要。".format(max_t)
     elif min_t < 12:
         return "明天低溫 {}°C，多穿一層，暖身操做足再出發。".format(min_t)
-    elif int(pop_a) > 40 if str(pop_a).isdigit() else False:
-        return "下午有雨，建議早上出門跑，享受清晨的空氣！"
+    elif pop_day > 40 and pop_night <= 40:
+        return "白天有雨，建議傍晚出門跑，享受夜跑的涼爽！"
+    elif pop_day <= 40 and pop_night > 40:
+        return "晚上有雨，建議早點出門跑，把握白天好天氣！"
     else:
         return "明天天氣不錯，適合出門跑步，不用設定目標，就享受那口呼吸吧。"
 
 def build_message(w):
     quote = random.choice(QUOTES)
-    suggestion = running_suggestion(
-        w["pop_morning"], w["pop_afternoon"], w["pop_evening"],
-        w["max_t"], w["min_t"]
-    )
+    suggestion = running_suggestion(w["pop_day"], w["pop_night"], w["max_t"], w["min_t"])
     msg = "🗓️ 台北明日天氣｜" + w["date"] + "\n"
     msg += "\n"
     msg += "⛅ 天氣｜" + w["wx"] + "\n"
     msg += "🌡️ 氣溫｜" + str(w["min_t"]) + "°C ～ " + str(w["max_t"]) + "°C\n"
     msg += "\n"
     msg += "☔ 降雨機率\n"
-    msg += "🌅 早上（06-12）｜" + str(w["pop_morning"]) + "%\n"
-    msg += "☀️ 下午（12-18）｜" + str(w["pop_afternoon"]) + "%\n"
-    msg += "🌙 晚上（18-24）｜" + str(w["pop_evening"]) + "%\n"
+    msg += "🌅 白天（06-18）｜" + str(w["pop_day"]) + "%\n"
+    msg += "🌙 晚上（18-06）｜" + str(w["pop_night"]) + "%\n"
     msg += "\n"
     msg += "🏃 跑步建議\n"
     msg += suggestion + "\n"
