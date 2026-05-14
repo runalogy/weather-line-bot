@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import random
 from datetime import datetime, timedelta
@@ -124,6 +125,7 @@ def send_line_message(text):
             print("送出成功：" + gid[:10])
         else:
             print("失敗：" + str(r.status_code))
+        time.sleep(1)
 
 if __name__ == "__main__":
     w = get_taipei_tomorrow()
