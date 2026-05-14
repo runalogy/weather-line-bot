@@ -67,7 +67,7 @@ def get_taipei_tomorrow():
         "date"        : (datetime.now() + timedelta(days=1)).strftime("%m/%d"),
         "wx"          : val("Wx", 2),
         "pop_day"     : int(val("PoP", 2)),   # 明天白天
-        "pop_night"   : int(val("PoP", 3)),   # 明天晚上
+        "pop_night" : int(val("PoP", 3)) if len(elements["PoP"]) > 3 else int(val("PoP", 2)),
         "min_t"       : int(val("MinT", 2)),
         "max_t"       : int(val("MaxT", 2)),
     }
