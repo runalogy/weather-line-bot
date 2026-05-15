@@ -147,7 +147,7 @@ def send_line_message(text):
             print("送出成功：" + gid[:10])
         else:
             print("失敗：" + str(r.status_code))
-        time.sleep(5)
+        time.sleep(10)
 
 if __name__ == "__main__":
     w = get_taipei_tomorrow()
